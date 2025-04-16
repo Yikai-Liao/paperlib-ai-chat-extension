@@ -119,6 +119,20 @@ class PaperlibAIChatExtension extends PLExtension {
           value: "",
           order: 6,
         },
+        customAPIKey: {
+          type: "string",
+          name: "Custom API Key",
+          description: "The API key for the custom API URL. Included as 'Authorization: Bearer YOUR_API_KEY'.",
+          value: "",
+          order: 7,
+        },
+        customParameters: {
+          type: "string",
+          name: "Custom API Parameters (JSON)",
+          description: "Additional parameters to send in the API request body, formatted as JSON (e.g., {\"top_p\": 0.9, \"temperature\": 0.7}).",
+          value: "{}",
+          order: 8,
+        },
       },
     });
 

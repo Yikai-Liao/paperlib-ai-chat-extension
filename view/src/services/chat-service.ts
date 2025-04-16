@@ -158,35 +158,60 @@ export class ChatService {
     )) as string;
 
     let apiKey = "";
+    let customParameters: Record<string, any> = {};
 
-    const modelServiceProvider = LLMsAPI.modelServiceProvider(model);
-    if (modelServiceProvider === "Gemini") {
+    if (customAPIURL) {
+      // Use custom API settings if URL is provided
       apiKey = (await PLExtAPI.extensionPreferenceService.get(
         "@future-scholars/paperlib-ai-chat-extension",
-        "gemini-api-key",
+        "customAPIKey",
       )) as string;
-    } else if (modelServiceProvider === "OpenAI") {
-      apiKey = (await PLExtAPI.extensionPreferenceService.get(
+      const customParamsStr = (await PLExtAPI.extensionPreferenceService.get(
         "@future-scholars/paperlib-ai-chat-extension",
-        "openai-api-key",
+        "customParameters",
       )) as string;
-    } else if (modelServiceProvider === "Perplexity") {
-      apiKey = (await PLExtAPI.extensionPreferenceService.get(
-        "@future-scholars/paperlib-ai-chat-extension",
-        "perplexity-api-key",
-      )) as string;
-    } else if (modelServiceProvider === "Zhipu") {
-      apiKey = (await PLExtAPI.extensionPreferenceService.get(
-        "@future-scholars/paperlib-ai-chat-extension",
-        "zhipu-api-key",
-      )) as string;
+      try {
+        customParameters = JSON.parse(customParamsStr || "{}");
+      } catch (error) {
+        PLAPI.logService.error(
+          "Failed to parse custom parameters JSON",
+          customParamsStr,
+          true,
+          "AIChatExt",
+        );
+        customParameters = {}; // Fallback to empty object on parse error
+      }
+    } else {
+      // Use built-in model settings
+      const modelServiceProvider = LLMsAPI.modelServiceProvider(model);
+      if (modelServiceProvider === "Gemini") {
+        apiKey = (await PLExtAPI.extensionPreferenceService.get(
+          "@future-scholars/paperlib-ai-chat-extension",
+          "gemini-api-key",
+        )) as string;
+      } else if (modelServiceProvider === "OpenAI") {
+        apiKey = (await PLExtAPI.extensionPreferenceService.get(
+          "@future-scholars/paperlib-ai-chat-extension",
+          "openai-api-key",
+        )) as string;
+      } else if (modelServiceProvider === "Perplexity") {
+        apiKey = (await PLExtAPI.extensionPreferenceService.get(
+          "@future-scholars/paperlib-ai-chat-extension",
+          "perplexity-api-key",
+        )) as string;
+      } else if (modelServiceProvider === "Zhipu") {
+        apiKey = (await PLExtAPI.extensionPreferenceService.get(
+          "@future-scholars/paperlib-ai-chat-extension",
+          "zhipu-api-key",
+        )) as string;
+      }
     }
 
-    return { model, customAPIURL, apiKey };
+    return { model, customAPIURL, apiKey, customParameters };
   }
 
   async queryLLM(msg: string, context: string, anwserLang: string = "English") {
-    const { model, customAPIURL, apiKey } = await this.llmConfig();
+    const { model, customAPIURL, apiKey, customParameters } = await this.llmConfig();
 
     const query = `I'm reading a paper, I have a question: ${msg}. Please help me answer it with the following context: ${context}.`;
 
@@ -198,7 +223,7 @@ export class ChatService {
       .setAPIURL(customAPIURL)
       .query(
         query,
-        undefined,
+        customParameters,
         async (url: string, headers: Record<string, string>, body: any) => {
           const response = (await PLExtAPI.networkTool.post(
             url,
